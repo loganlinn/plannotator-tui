@@ -27,6 +27,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       - run: python3 herdr/test-manifest.py
+      - run: python3 scripts/test-kitty.py
       - run: cargo build --release -p plannotator-tui
       - run: bash herdr/stage-plannotator-tui.sh
       - run: cmp target/release/plannotator-tui herdr/bin/plannotator-tui.exe
@@ -47,6 +48,7 @@ jobs:
       - run: cargo build --release -p plannotator-tui
       - run: '& .\target\release\plannotator-tui.exe --version'
       - run: python herdr/test-manifest.py
+      - run: python scripts/test-kitty.py
       - run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File herdr/stage-plannotator-tui.ps1
       - run: |
           $source = (Get-FileHash .\target\release\plannotator-tui.exe).Hash

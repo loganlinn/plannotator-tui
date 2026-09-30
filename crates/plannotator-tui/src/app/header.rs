@@ -87,7 +87,9 @@ impl App {
             }
             SendState::Ready => Style::new().fg(Color::Black).bg(SEND_BG).bold(),
             SendState::Sent => Style::new().fg(Color::Black).bg(SENT_BG).bold(),
-            SendState::Blocked(_) => Style::new().fg(Color::Black).bg(BLOCKED_BG).bold(),
+            SendState::Blocked(_) | SendState::Uncertain(_) => {
+                Style::new().fg(Color::Black).bg(BLOCKED_BG).bold()
+            }
         }
     }
 }

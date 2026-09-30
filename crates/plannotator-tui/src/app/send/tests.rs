@@ -237,3 +237,30 @@ fn the_footer_names_s_only_in_a_reply_review_and_fits_at_80_columns() {
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 }
+
+#[test]
+fn uncertain_submission_keeps_notes_pending_and_reply_open() {
+    let (root, mut app, delivery) = reply_app("uncertain");
+    app.add_quote_annotation("one", Kind::Comment, "feedback".into()).expect("note");
+    delivery.outcome.set(Outcome::Uncertain);
+    press(&mut app, 'S');
+    assert!(!app.quit);
+    assert!(matches!(app.send_state, SendState::Uncertain(_)));
+    assert!(!app.open.store.all_delivered());
+    assert!(app.status.as_deref().expect("status").contains("inspect the agent"));
+    assert_eq!(delivery.calls.borrow().len(), 1);
+    std::fs::remove_dir_all(root).expect("cleanup");
+}
+
+#[test]
+fn uncertain_file_submission_stays_visible_when_notes_change() {
+    let (root, mut app, delivery) = file_app("uncertain-file");
+    app.add_quote_annotation("one", Kind::Comment, "feedback".into()).expect("note");
+    delivery.outcome.set(Outcome::Uncertain);
+    press(&mut app, 'E');
+    app.add_quote_annotation("two", Kind::Comment, "more feedback".into()).expect("note");
+    assert!(matches!(app.send_state, SendState::Uncertain(_)));
+    assert!(app.send_label().contains("inspect agent"));
+    assert_eq!(app.send_count(), 2);
+    std::fs::remove_dir_all(root).expect("cleanup");
+}

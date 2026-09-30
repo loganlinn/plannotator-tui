@@ -17,6 +17,7 @@ use crate::theme::ThemeSetting;
 #[serde(deny_unknown_fields, default)]
 pub(crate) struct Config {
     pub(crate) herdr: HerdrConfig,
+    pub(crate) kitty: crate::kitty::args::KittyConfig,
     pub(crate) ui: UiConfig,
 }
 

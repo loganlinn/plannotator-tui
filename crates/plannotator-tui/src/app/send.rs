@@ -18,6 +18,7 @@ pub(super) enum SendState {
     Ready,
     Sent,
     Blocked(String),
+    Uncertain(String),
 }
 
 impl App {
@@ -71,14 +72,20 @@ impl App {
                 self.status = Some(status);
             }
             Err(DeliveryError::Blocked(msg)) => {
-                let copied = if self.copy_fallback(&feedback.text) { " · copied to clipboard" } else { "" };
+                let copied = self.copy_fallback_status(&feedback.text);
                 self.status = Some(format!("{target} is at a dialog{copied} · {retry} retry"));
                 self.send_state = SendState::Blocked(msg);
             }
             Err(DeliveryError::Unavailable(msg)) => {
-                let copied = if self.copy_fallback(&feedback.text) { " · copied to clipboard" } else { "" };
-                self.status = Some(format!("no agent to send to ({msg}){copied} · {retry} retry"));
+                let copied = self.copy_fallback_status(&feedback.text);
+                self.status = Some(format!("cannot send to {target} ({msg}){copied} · {retry} retry"));
                 self.derive_send_state();
+            }
+            Err(DeliveryError::Uncertain(msg)) => {
+                let copied = self.copy_fallback_status(&feedback.text);
+                self.status =
+                    Some(format!("submission uncertain: {msg}{copied}; inspect the agent before retrying"));
+                self.send_state = SendState::Uncertain(msg);
             }
             Err(DeliveryError::Failed(err)) => {
                 self.status = Some(format!("send failed: {err:#} · {retry} retry"));
@@ -88,8 +95,14 @@ impl App {
         Ok(())
     }
 
-    fn copy_fallback(&self, text: &str) -> bool {
-        self.clipboard && Clipboard.deliver(text).is_ok()
+    fn copy_fallback_status(&self, text: &str) -> String {
+        if !self.clipboard {
+            return String::new();
+        }
+        match Clipboard.deliver(text) {
+            Ok(()) => " · copied to clipboard".into(),
+            Err(err) => format!(" · clipboard copy failed: {err}"),
+        }
     }
 
     /// Keep the ids from the body we delivered. Attempt every file even when one record
@@ -187,6 +200,9 @@ impl App {
     }
 
     pub(super) fn send_label(&self) -> String {
+        if matches!(self.send_state, SendState::Uncertain(_)) {
+            return "Submission uncertain · inspect agent".into();
+        }
         let target = self.delivery.describe();
         let count = self.send_count();
         if self.is_file_review() {
@@ -204,11 +220,14 @@ impl App {
                 SendState::Ready => format!("Send {count} to {target} ▸"),
                 SendState::Sent => format!("Sent ▸ {target}"),
                 SendState::Blocked(_) => format!("{target} at a dialog · click to retry"),
+                SendState::Uncertain(_) => "Submission uncertain · inspect agent".into(),
             }
         } else {
             match &self.send_state {
                 SendState::Sent => "Copied".to_owned(),
-                SendState::Ready | SendState::Blocked(_) => format!("Copy {count} as feedback"),
+                SendState::Ready | SendState::Blocked(_) | SendState::Uncertain(_) => {
+                    format!("Copy {count} as feedback")
+                }
             }
         }
     }
@@ -236,6 +255,9 @@ impl App {
     }
 
     pub(super) fn derive_send_state(&mut self) {
+        if matches!(self.send_state, SendState::Uncertain(_)) {
+            return;
+        }
         let delivered = if self.is_file_review() {
             let counts = self.review_counts();
             counts.pending == 0 && counts.sent > 0

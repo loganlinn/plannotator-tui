@@ -26,6 +26,7 @@ pub(super) enum Outcome {
     Blocked,
     Unavailable,
     Failed,
+    Uncertain,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -47,6 +48,7 @@ impl Delivery for RecordingDelivery {
             Outcome::Success => Ok(()),
             Outcome::Blocked => Err(DeliveryError::Blocked("at a dialog".into())),
             Outcome::Unavailable => Err(DeliveryError::Unavailable("agent gone".into())),
+            Outcome::Uncertain => Err(DeliveryError::Uncertain("no acknowledgement".into())),
             Outcome::Failed => Err(DeliveryError::Failed(anyhow::anyhow!("transport failed"))),
         }
     }

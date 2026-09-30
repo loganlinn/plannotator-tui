@@ -18,12 +18,14 @@ pub(crate) enum DeliveryError {
     Unavailable(String),
     /// Anything else, with whatever the transport said.
     Failed(anyhow::Error),
+    /// Input may have landed; a retry could duplicate it.
+    Uncertain(String),
 }
 
 impl std::fmt::Display for DeliveryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Blocked(msg) | Self::Unavailable(msg) => f.write_str(msg),
+            Self::Blocked(msg) | Self::Unavailable(msg) | Self::Uncertain(msg) => f.write_str(msg),
             Self::Failed(err) => write!(f, "{err:#}"),
         }
     }

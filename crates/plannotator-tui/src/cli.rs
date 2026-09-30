@@ -33,6 +33,7 @@ const USAGE: &str = "usage:
   plannotator-tui --snapshot <file.md> [cols rows scroll] [select-quote] [menu]
   plannotator-tui config
   plannotator-tui --version
+  plannotator-tui kitty <open|last|selection|terminal|setup|hook> [options]
   plannotator-tui herdr open [file.md | folder] [--placement overlay|split|popup] [--deliver-to <pane>]
   plannotator-tui herdr last [--placement P] [--deliver-to <pane>] [--newest]
   plannotator-tui herdr terminal [--lines N] [--placement P] [--deliver-to <pane>] [--print]
@@ -56,6 +57,9 @@ fn open_file(path: &PathBuf) -> Result<DocumentSource> {
 pub(crate) fn delivery(interactive: bool) -> Box<dyn Delivery> {
     if !interactive {
         return Box::new(Discard);
+    }
+    if let Some(delivery) = crate::kitty::delivery::from_context() {
+        return delivery;
     }
     let env = HerdrEnv::from_env();
     match env.delivery_target() {
@@ -152,6 +156,7 @@ pub(crate) fn run(args: &[String]) -> Result<()> {
             Ok(())
         }
         Some("config") => show_config(),
+        Some("kitty") => crate::kitty::run(args.get(1..).unwrap_or_default()),
         Some("herdr") => herdr_command(args.get(1..).unwrap_or_default()),
         Some("last") => last_command(args.get(1..).unwrap_or_default()),
         Some(flag) if flag.starts_with("--") => anyhow::bail!("unknown flag {flag}\n{USAGE}"),
@@ -326,7 +331,7 @@ fn last_command(args: &[String]) -> Result<()> {
     crate::last::run(&options)
 }
 
-fn interactive(path: &PathBuf) -> Result<()> {
+pub(crate) fn interactive(path: &PathBuf) -> Result<()> {
     run_ui(|width| open_app(path, width, true))
 }
 

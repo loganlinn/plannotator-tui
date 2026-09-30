@@ -94,6 +94,15 @@ Hidden folders are out of the tree until `.` asks for them, and `.git`, `.hg`, `
 Showing or hiding is a view choice: notes recorded for a file inside a hidden folder are
 part of the review and are sent whether or not its folder is listed.
 
+## Inside Kitty
+
+Run `plannotator-tui kitty setup` for the bundled kitten, keybindings, Markdown link rules,
+and Codex/Claude hooks. Then `plannotator-tui kitty open docs/plan.md` opens a review over
+the source window and routes feedback to that exact agent session. `kitty last`,
+`kitty selection`, and `kitty terminal` review replies, selections, and terminal output.
+Unknown or blocked input surfaces copy feedback and keep the review open.
+See [Kitty setup, limits, and validation](docs/kitty.md).
+
 ## Inside Herdr
 
 Install [Herdr Annotate](https://github.com/plannotator/herdr-annotate); it bundles this binary,
